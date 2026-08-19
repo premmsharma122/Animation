@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insertion Sort Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117;
+    --card:#161923;
+    --card-2:#1b1f2b;
+    --border:#262b3a;
+    --text:#e8eaf0;
+    --muted:#7d8496;
+    --bar:#2d3348;
+    --bar-line:#3a4159;
+    --key:#f6ad55;
+    --key-glow:rgba(246,173,85,0.35);
+    --compare:#4fd1c5;
+    --compare-glow:rgba(79,209,197,0.35);
+    --shift:#b794f4;
+    --shift-glow:rgba(183,148,244,0.32);
+    --sorted:#48bb78;
+    --sorted-glow:rgba(72,187,120,0.3);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:28px 18px 40px;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--key);
+    margin:0 0 6px;
+  }
+  h1{
+    font-size:26px;
+    margin:0 0 4px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:14px;
+    margin:0 0 22px;
+  }
+  .array-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .array-label{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .array-values{
+    font-family:'Space Mono',monospace;
+    font-size:14px;
+    color:var(--text);
+  }
+  .stage{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:44px 20px 14px;
+    position:relative;
+    overflow:visible;
+  }
+  .divider-wrap{
+    position:absolute;
+    top:44px;
+    bottom:36px;
+    pointer-events:none;
+    transition:left .5s cubic-bezier(.4,0,.2,1);
+  }
+  .divider-line{
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:2px;
+    background:repeating-linear-gradient(to bottom, var(--sorted) 0 6px, transparent 6px 12px);
+    opacity:0.6;
+  }
+  .divider-label{
+    position:absolute;
+    top:-24px;
+    left:6px;
+    font-family:'Space Mono',monospace;
+    font-size:10px;
+    color:var(--sorted);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .bars{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:14px;
+    height:220px;
+    position:relative;
+    padding:0 10px;
+  }
+  .bar-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    width:52px;
+    position:relative;
+    transition:transform 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .bar{
+    width:100%;
+    background:var(--bar);
+    border:1px solid var(--bar-line);
+    border-radius:8px 8px 4px 4px;
+    position:relative;
+    transition:background .3s ease, border-color .3s ease, box-shadow .3s ease, height .3s ease;
+  }
+  .bar-val{
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--text);
+    position:absolute;
+    top:-26px;
+    left:0;
+    right:0;
+    text-align:center;
+  }
+  .bar-idx{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .bar-col.key .bar{
+    background:rgba(246,173,85,0.2);
+    border-color:var(--key);
+    box-shadow:0 0 0 3px var(--key-glow);
+  }
+  .bar-col.key .bar-val{color:var(--key);}
+  .bar-col.key{transform:translateY(-26px);}
+  .bar-col.compare .bar{
+    background:rgba(79,209,197,0.18);
+    border-color:var(--compare);
+    box-shadow:0 0 0 3px var(--compare-glow);
+  }
+  .bar-col.compare .bar-val{color:var(--compare);}
+  .bar-col.shift .bar{
+    background:rgba(183,148,244,0.18);
+    border-color:var(--shift);
+    box-shadow:0 0 0 3px var(--shift-glow);
+  }
+  .bar-col.shift .bar-val{color:var(--shift);}
+  .bar-col.sorted .bar{
+    background:rgba(72,187,120,0.14);
+    border-color:var(--sorted);
+  }
+  .bar-col.sorted .bar-val{color:var(--sorted);}
+
+  .info-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin:20px 0 4px;
+  }
+  .info-card{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  .info-label{
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .info-val{
+    font-family:'Space Mono',monospace;
+    font-size:16px;
+    font-weight:700;
+  }
+  .info-val.key-c{color:var(--key);}
+  .info-val.compare-c{color:var(--compare);}
+  .info-val.sorted-c{color:var(--sorted);}
+
+  .status-line{
+    font-family:'Space Mono',monospace;
+    font-size:13.5px;
+    color:var(--muted);
+    min-height:20px;
+    margin:14px 2px 0;
+  }
+  .status-line b{color:var(--text);}
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:22px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border-radius:8px;
+    padding:10px 16px;
+    border:1px solid var(--border);
+    background:var(--card-2);
+    color:var(--text);
+    cursor:pointer;
+    transition:border-color .2s ease, background .2s ease, transform .08s ease;
+  }
+  button:hover{border-color:var(--key);}
+  button:active{transform:scale(0.97);}
+  button.primary{
+    background:var(--key);
+    color:#3a2405;
+    border-color:var(--key);
+  }
+  button.primary:hover{background:#f8bd76;}
+  button.auto.playing{
+    background:var(--shift);
+    border-color:var(--shift);
+    color:#241638;
+  }
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .step-count{
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin-left:auto;
+  }
+  .step-count b{color:var(--text);}
+
+  .progress-track{
+    height:4px;
+    border-radius:2px;
+    background:var(--border);
+    margin-top:14px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--key),var(--sorted));
+    width:0%;
+    transition:width .4s ease;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:26px;
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+  }
+  caption{
+    text-align:left;
+    color:var(--muted);
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  th,td{
+    padding:8px 10px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  tbody tr:last-child{background:var(--card-2);}
+  .tag{
+    display:inline-block;
+    padding:2px 7px;
+    border-radius:5px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .tag.shift{background:rgba(183,148,244,0.18);color:var(--shift);}
+  .tag.place{background:rgba(72,187,120,0.18);color:var(--sorted);}
+  .tag.keep{background:rgba(125,132,150,0.16);color:var(--muted);}
+  .table-scroll{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:0 12px;}
+  .table-scroll table{margin-top:10px;}
+  .table-scroll th{position:sticky;top:0;background:var(--card);padding-top:10px;}
+
+  @media (max-width:600px){
+    .info-grid{grid-template-columns:repeat(2,1fr);}
+    .bars{gap:8px;}
+    .bar-col{width:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Sorting &middot; In-place &middot; O(n&sup2;)</p>
+  <h1>Insertion Sort</h1>
+  <p class="sub">Each element is picked as a "key" and inserted into its correct position within the already-sorted prefix.</p>
+
+  <div class="array-row">
+    <span class="array-label">Array:</span>
+    <span class="array-values" id="arrayValuesLabel"></span>
+  </div>
+
+  <div class="stage">
+    <div class="divider-wrap" id="dividerWrap">
+      <div class="divider-label">sorted</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">Key</div>
+      <div class="info-val key-c" id="infoKey">—</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Action</div>
+      <div class="info-val compare-c" id="infoAction">—</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Pass</div>
+      <div class="info-val" id="infoPass">0</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Sorted Prefix</div>
+      <div class="info-val sorted-c" id="infoSorted">1</div>
+    </div>
+  </div>
+
+  <p class="status-line" id="statusLine">Press Next Step to begin</p>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="controls">
+    <button id="resetBtn">Reset</button>
+    <button id="nextBtn" class="primary">Next Step →</button>
+    <button id="autoBtn" class="auto">▶ Auto Play</button>
+    <span class="step-count">Step <b id="stepNow">0</b> / <span id="stepTotal">0</span></span>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <caption>Step Log</caption>
+      <thead>
+        <tr><th>#</th><th>Pass</th><th>Key</th><th>j</th><th>Compare</th><th>Result</th><th>Array After</th></tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const INITIAL = [8, 3, 9, 1, 6, 4, 2, 7];
+
+function buildSteps(arr){
+  const a = arr.slice();
+  const n = a.length;
+  const steps = [];
+
+  for(let i = 1; i < n; i++){
+    const keyVal = a[i];
+    let j = i - 1;
+    let placed = false;
+
+    steps.push({
+      type:'pick',
+      pass:i, key:i, keyVal, j:null,
+      array:a.slice(),
+      sortedPrefix:i
+    });
+
+    while(j >= 0){
+      const willShift = a[j] > keyVal;
+      steps.push({
+        type:'compare',
+        pass:i, key:i, keyVal, j,
+        array:a.slice(),
+        compareVal:a[j],
+        willShift,
+        sortedPrefix:i
+      });
+      if(!willShift){ break; }
+      a[j+1] = a[j];
+      j--;
+      steps.push({
+        type:'shift',
+        pass:i, key:i, keyVal, j:j+1,
+        array:a.slice(),
+        sortedPrefix:i
+      });
+      placed = true;
+    }
+    a[j+1] = keyVal;
+    steps.push({
+      type:'place',
+      pass:i, key:i, keyVal, j:j+1,
+      array:a.slice(),
+      sortedPrefix:i+1
+    });
+  }
+  steps.push({type:'done', pass:'—', key:null, j:null, array:a.slice(), sortedPrefix:n});
+  return steps;
+}
+
+const steps = buildSteps(INITIAL);
+let cursor = 0;
+let autoTimer = null;
+
+const barsEl = document.getElementById('bars');
+const logBody = document.getElementById('logBody');
+const arrayValuesLabel = document.getElementById('arrayValuesLabel');
+const dividerWrap = document.getElementById('dividerWrap');
+
+arrayValuesLabel.textContent = '[' + INITIAL.join(', ') + ']';
+document.getElementById('stepTotal').textContent = steps.length - 1;
+
+const maxVal = Math.max(...INITIAL);
+let barEls = [];
+
+function renderBars(arr){
+  barsEl.innerHTML = '';
+  barEls = arr.map((val, idx) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.dataset.idx = idx;
+    const height = 30 + (val / maxVal) * 150;
+    col.innerHTML = `
+      <div class="bar-val">${val}</div>
+      <div class="bar" style="height:${height}px"></div>
+      <div class="bar-idx">${idx}</div>
+    `;
+    barsEl.appendChild(col);
+    return col;
+  });
+}
+
+function positionDivider(sortedPrefix, arrLen){
+  // place divider line right after index (sortedPrefix - 1)
+  if(sortedPrefix <= 0){
+    dividerWrap.style.opacity = '0';
+    return;
+  }
+  dividerWrap.style.opacity = '1';
+  const colWidth = 52;
+  const gap = 14;
+  const stageStyle = getComputedStyle(document.querySelector('.stage'));
+  const padLeft = parseFloat(stageStyle.paddingLeft);
+  // compute bars container left offset (centered flex) - approximate via bar element position
+  requestAnimationFrame(() => {
+    if(barEls.length === 0) return;
+    const boundaryIdx = sortedPrefix; // divider sits before this index
+    const stageRect = document.querySelector('.stage').getBoundingClientRect();
+    let leftPx;
+    if(boundaryIdx >= barEls.length){
+      const lastRect = barEls[barEls.length-1].getBoundingClientRect();
+      leftPx = lastRect.right - stageRect.left + (gap/2);
+    } else {
+      const targetRect = barEls[boundaryIdx].getBoundingClientRect();
+      leftPx = targetRect.left - stageRect.left - (gap/2);
+    }
+    dividerWrap.style.left = leftPx + 'px';
+  });
+}
+
+function markSorted(sortedPrefix){
+  barEls.forEach((col, idx) => {
+    if(idx < sortedPrefix) col.classList.add('sorted');
+  });
+}
+
+function applyStateAt(n){
+  const arr = n === 0 ? INITIAL : steps[n-1].array;
+  renderBars(arr);
+
+  if(n === 0){
+    document.getElementById('infoKey').textContent = '—';
+    document.getElementById('infoAction').textContent = '—';
+    document.getElementById('infoPass').textContent = '0';
+    document.getElementById('infoSorted').textContent = '1';
+    document.getElementById('statusLine').innerHTML = 'Press <b>Next Step</b> to begin';
+    document.getElementById('progressFill').style.width = '0%';
+    markSorted(1);
+    positionDivider(1, arr.length);
+    return;
+  }
+
+  const s = steps[n-1];
+
+  if(s.type === 'pick'){
+    markSorted(s.sortedPrefix);
+    barEls[s.key].classList.add('key');
+    document.getElementById('infoKey').textContent = `a[${s.key}] = ${s.keyVal}`;
+    document.getElementById('infoAction').textContent = 'Picked';
+    document.getElementById('statusLine').innerHTML =
+      `Pass <b>${s.pass}</b>: picked key <b>${s.keyVal}</b> at index <b>${s.key}</b> to insert into the sorted prefix`;
+  } else if(s.type === 'compare'){
+    markSorted(s.sortedPrefix);
+    barEls[s.key] ? barEls[s.key].classList.add('key') : null;
+    barEls[s.j].classList.add('compare');
+    document.getElementById('infoKey').textContent = `${s.keyVal}`;
+    document.getElementById('infoAction').textContent = s.willShift ? 'Will Shift' : 'Insert Here';
+    document.getElementById('statusLine').innerHTML =
+      `Comparing key <b>${s.keyVal}</b> with <b>a[${s.j}]=${s.compareVal}</b> — ` +
+      (s.willShift ? `<b>${s.compareVal} &gt; ${s.keyVal}</b>, shift it right` : `<b>${s.compareVal} &le; ${s.keyVal}</b>, key stops here`);
+  } else if(s.type === 'shift'){
+    markSorted(s.sortedPrefix);
+    barEls[s.j].classList.add('shift');
+    document.getElementById('infoKey').textContent = `${s.keyVal}`;
+    document.getElementById('infoAction').textContent = 'Shifted';
+    document.getElementById('statusLine').innerHTML =
+      `Shifted <b>${s.array[s.j]}</b> one step right to open a gap at index <b>${s.j}</b>`;
+  } else if(s.type === 'place'){
+    markSorted(s.sortedPrefix);
+    barEls[s.j].classList.add('key');
+    document.getElementById('infoKey').textContent = `${s.keyVal}`;
+    document.getElementById('infoAction').textContent = 'Placed';
+    document.getElementById('statusLine').innerHTML =
+      `Placed key <b>${s.keyVal}</b> at index <b>${s.j}</b> — sorted prefix now covers <b>${s.sortedPrefix}</b> element(s)`;
+  } else if(s.type === 'done'){
+    markSorted(arr.length);
+    document.getElementById('infoKey').textContent = '—';
+    document.getElementById('infoAction').textContent = 'Sorted!';
+    document.getElementById('statusLine').innerHTML = `Array is fully sorted: <b>[${s.array.join(', ')}]</b>`;
+  }
+
+  document.getElementById('infoPass').textContent = s.pass;
+  document.getElementById('infoSorted').textContent = s.sortedPrefix;
+  document.getElementById('progressFill').style.width = `${(n/(steps.length-1))*100}%`;
+  positionDivider(s.sortedPrefix, arr.length);
+}
+
+function appendLogRow(n){
+  const s = steps[n-1];
+  const tr = document.createElement('tr');
+  let resultTag;
+  if(s.type === 'shift') resultTag = '<span class="tag shift">SHIFT</span>';
+  else if(s.type === 'place') resultTag = '<span class="tag place">PLACE</span>';
+  else if(s.type === 'done') resultTag = '<span class="tag place">DONE</span>';
+  else if(s.type === 'pick') resultTag = '<span class="tag keep">pick</span>';
+  else resultTag = s.willShift ? '<span class="tag keep">→ shift next</span>' : '<span class="tag keep">stop</span>';
+
+  const compareText = s.type === 'compare'
+    ? `key=${s.keyVal}, a[${s.j}]=${s.compareVal}`
+    : (s.type === 'done' ? '—' : `key=${s.keyVal}`);
+
+  tr.innerHTML = `
+    <td>${n}</td>
+    <td>${s.pass}</td>
+    <td>${s.keyVal ?? '—'}</td>
+    <td>${s.j ?? '—'}</td>
+    <td>${compareText}</td>
+    <td>${resultTag}</td>
+    <td>[${s.array.join(', ')}]</td>
+  `;
+  logBody.appendChild(tr);
+  logBody.parentElement.scrollTop = logBody.parentElement.scrollHeight;
+}
+
+function goNext(){
+  if(cursor >= steps.length) return;
+  cursor++;
+  applyStateAt(cursor);
+  appendLogRow(cursor);
+  document.getElementById('stepNow').textContent = cursor;
+  if(cursor >= steps.length){
+    document.getElementById('nextBtn').disabled = true;
+    stopAuto();
+  }
+}
+
+function reset(){
+  cursor = 0;
+  logBody.innerHTML = '';
+  applyStateAt(0);
+  document.getElementById('stepNow').textContent = 0;
+  document.getElementById('nextBtn').disabled = false;
+  stopAuto();
+}
+
+function stopAuto(){
+  clearInterval(autoTimer);
+  autoTimer = null;
+  const btn = document.getElementById('autoBtn');
+  btn.textContent = '▶ Auto Play';
+  btn.classList.remove('playing');
+}
+
+function toggleAuto(){
+  const btn = document.getElementById('autoBtn');
+  if(autoTimer){
+    stopAuto();
+  } else {
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('playing');
+    autoTimer = setInterval(() => {
+      if(cursor >= steps.length){ stopAuto(); return; }
+      goNext();
+    }, 750);
+  }
+}
+
+document.getElementById('nextBtn').addEventListener('click', goNext);
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+
+applyStateAt(0);
+window.addEventListener('resize', () => positionDivider(steps[cursor-1] ? steps[cursor-1].sortedPrefix : 1, INITIAL.length));
+</script>
+</body>
+</html>
