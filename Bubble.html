@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bubble Sort Animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117;
+    --card:#161923;
+    --card-2:#1b1f2b;
+    --border:#262b3a;
+    --text:#e8eaf0;
+    --muted:#7d8496;
+    --bar:#2d3348;
+    --bar-line:#3a4159;
+    --compare:#4fd1c5;
+    --compare-glow:rgba(79,209,197,0.35);
+    --swap:#f6ad55;
+    --swap-glow:rgba(246,173,85,0.35);
+    --sorted:#48bb78;
+    --sorted-glow:rgba(72,187,120,0.3);
+    --danger:#fc8181;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    padding:28px 18px 40px;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--compare);
+    margin:0 0 6px;
+  }
+  h1{
+    font-size:26px;
+    margin:0 0 4px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:14px;
+    margin:0 0 22px;
+  }
+  .array-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .array-label{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .array-values{
+    font-family:'Space Mono',monospace;
+    font-size:14px;
+    color:var(--text);
+  }
+  .stage{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:26px 20px 14px;
+    position:relative;
+    overflow:visible;
+  }
+  .bars{
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:14px;
+    height:220px;
+    position:relative;
+    padding:0 10px;
+  }
+  .bar-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    width:52px;
+    position:relative;
+    transition:transform 0.55s cubic-bezier(.4,0,.2,1);
+  }
+  .bar{
+    width:100%;
+    background:var(--bar);
+    border:1px solid var(--bar-line);
+    border-radius:8px 8px 4px 4px;
+    position:relative;
+    transition:background .3s ease, border-color .3s ease, box-shadow .3s ease, height .3s ease;
+  }
+  .bar-val{
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--text);
+    position:absolute;
+    top:-26px;
+    left:0;
+    right:0;
+    text-align:center;
+  }
+  .bar-idx{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .bar-col.compare .bar{
+    background:rgba(79,209,197,0.18);
+    border-color:var(--compare);
+    box-shadow:0 0 0 3px var(--compare-glow);
+  }
+  .bar-col.compare .bar-val{color:var(--compare);}
+  .bar-col.swap .bar{
+    background:rgba(246,173,85,0.2);
+    border-color:var(--swap);
+    box-shadow:0 0 0 3px var(--swap-glow);
+  }
+  .bar-col.swap .bar-val{color:var(--swap);}
+  .bar-col.sorted .bar{
+    background:rgba(72,187,120,0.16);
+    border-color:var(--sorted);
+  }
+  .bar-col.sorted .bar-val{color:var(--sorted);}
+  .bar-col.lifted{transform:translateY(-26px);}
+
+  .bubble{
+    position:absolute;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(246,173,85,0.9), rgba(246,173,85,0.15));
+    pointer-events:none;
+    opacity:0;
+  }
+
+  .info-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin:20px 0 4px;
+  }
+  .info-card{
+    background:var(--card-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+  }
+  .info-label{
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .info-val{
+    font-family:'Space Mono',monospace;
+    font-size:16px;
+    font-weight:700;
+  }
+  .info-val.compare-c{color:var(--compare);}
+  .info-val.swap-c{color:var(--swap);}
+  .info-val.sorted-c{color:var(--sorted);}
+
+  .status-line{
+    font-family:'Space Mono',monospace;
+    font-size:13.5px;
+    color:var(--muted);
+    min-height:20px;
+    margin:14px 2px 0;
+  }
+  .status-line b{color:var(--text);}
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:22px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border-radius:8px;
+    padding:10px 16px;
+    border:1px solid var(--border);
+    background:var(--card-2);
+    color:var(--text);
+    cursor:pointer;
+    transition:border-color .2s ease, background .2s ease, transform .08s ease;
+  }
+  button:hover{border-color:var(--compare);}
+  button:active{transform:scale(0.97);}
+  button.primary{
+    background:var(--compare);
+    color:#08211f;
+    border-color:var(--compare);
+  }
+  button.primary:hover{background:#5fe0d3;}
+  button.auto.playing{
+    background:var(--swap);
+    border-color:var(--swap);
+    color:#3a2405;
+  }
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .step-count{
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin-left:auto;
+  }
+  .step-count b{color:var(--text);}
+
+  .progress-track{
+    height:4px;
+    border-radius:2px;
+    background:var(--border);
+    margin-top:14px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--compare),var(--sorted));
+    width:0%;
+    transition:width .4s ease;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:26px;
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+  }
+  caption{
+    text-align:left;
+    color:var(--muted);
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  th,td{
+    padding:8px 10px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  tbody tr:last-child{background:var(--card-2);}
+  .tag{
+    display:inline-block;
+    padding:2px 7px;
+    border-radius:5px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .tag.swap{background:rgba(246,173,85,0.18);color:var(--swap);}
+  .tag.keep{background:rgba(125,132,150,0.16);color:var(--muted);}
+  .table-scroll{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:0 12px;}
+  .table-scroll table{margin-top:10px;}
+  .table-scroll th{position:sticky;top:0;background:var(--card);padding-top:10px;}
+
+  @media (max-width:600px){
+    .info-grid{grid-template-columns:repeat(2,1fr);}
+    .bars{gap:8px;}
+    .bar-col{width:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Sorting &middot; In-place &middot; O(n&sup2;)</p>
+  <h1>Bubble Sort</h1>
+  <p class="sub">Adjacent elements are compared and swapped until the largest values "bubble up" to the end.</p>
+
+  <div class="array-row">
+    <span class="array-label">Array:</span>
+    <span class="array-values" id="arrayValuesLabel"></span>
+  </div>
+
+  <div class="stage">
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">Comparing</div>
+      <div class="info-val compare-c" id="infoCompare">—</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Action</div>
+      <div class="info-val swap-c" id="infoAction">—</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Pass</div>
+      <div class="info-val" id="infoPass">0</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Sorted Tail</div>
+      <div class="info-val sorted-c" id="infoSorted">0</div>
+    </div>
+  </div>
+
+  <p class="status-line" id="statusLine">Press Next Step to begin</p>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="controls">
+    <button id="resetBtn">Reset</button>
+    <button id="nextBtn" class="primary">Next Step →</button>
+    <button id="autoBtn" class="auto">▶ Auto Play</button>
+    <span class="step-count">Step <b id="stepNow">0</b> / <span id="stepTotal">0</span></span>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <caption>Step Log</caption>
+      <thead>
+        <tr><th>#</th><th>Pass</th><th>i</th><th>j</th><th>Compare</th><th>Result</th><th>Array After</th></tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const INITIAL = [8, 3, 9, 1, 6, 4, 2, 7];
+
+function buildSteps(arr){
+  const a = arr.slice();
+  const n = a.length;
+  const steps = [];
+  let sortedFrom = n;
+
+  for(let i = 0; i < n - 1; i++){
+    let swappedInPass = false;
+    for(let j = 0; j < n - i - 1; j++){
+      const willSwap = a[j] > a[j+1];
+      steps.push({
+        type:'compare',
+        pass:i+1, i:j, j:j+1,
+        array:a.slice(),
+        compareVals:[a[j],a[j+1]],
+        willSwap,
+        sortedFrom
+      });
+      if(willSwap){
+        [a[j],a[j+1]] = [a[j+1],a[j]];
+        swappedInPass = true;
+        steps.push({
+          type:'swap',
+          pass:i+1, i:j, j:j+1,
+          array:a.slice(),
+          compareVals:[a[j],a[j-0]],
+          sortedFrom
+        });
+      }
+    }
+    sortedFrom = n - i - 1;
+    if(!swappedInPass){
+      sortedFrom = 0;
+      break;
+    }
+  }
+  steps.push({type:'done', pass:'—', i:null, j:null, array:a.slice(), sortedFrom:0});
+  return steps;
+}
+
+const steps = buildSteps(INITIAL);
+let cursor = 0; // number of steps applied (0 = initial state)
+let autoTimer = null;
+
+const barsEl = document.getElementById('bars');
+const logBody = document.getElementById('logBody');
+const arrayValuesLabel = document.getElementById('arrayValuesLabel');
+
+arrayValuesLabel.textContent = '[' + INITIAL.join(', ') + ']';
+document.getElementById('stepTotal').textContent = steps.length - 1;
+
+const maxVal = Math.max(...INITIAL);
+let barEls = [];
+
+function renderBars(arr){
+  barsEl.innerHTML = '';
+  barEls = arr.map((val, idx) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.dataset.idx = idx;
+    const height = 30 + (val / maxVal) * 150;
+    col.innerHTML = `
+      <div class="bar-val">${val}</div>
+      <div class="bar" style="height:${height}px"></div>
+      <div class="bar-idx">${idx}</div>
+    `;
+    barsEl.appendChild(col);
+    return col;
+  });
+}
+
+function markSorted(sortedFrom, arrLen){
+  barEls.forEach((col, idx) => {
+    if(idx >= sortedFrom) col.classList.add('sorted');
+  });
+}
+
+function applyStateAt(n){
+  // n = number of steps applied (0..steps.length-1 index into log, but state 0 = INITIAL)
+  const arr = n === 0 ? INITIAL : steps[n-1].array;
+  renderBars(arr);
+
+  if(n === 0){
+    document.getElementById('infoCompare').textContent = '—';
+    document.getElementById('infoAction').textContent = '—';
+    document.getElementById('infoPass').textContent = '0';
+    document.getElementById('infoSorted').textContent = '0';
+    document.getElementById('statusLine').innerHTML = 'Press <b>Next Step</b> to begin';
+    document.getElementById('progressFill').style.width = '0%';
+    return;
+  }
+
+  const s = steps[n-1];
+  markSorted(s.sortedFrom, arr.length);
+
+  if(s.type === 'compare'){
+    barEls[s.i].classList.add('compare');
+    barEls[s.j].classList.add('compare');
+    document.getElementById('infoCompare').textContent = `a[${s.i}]=${s.array[s.i]}  vs  a[${s.j}]=${s.array[s.j]}`;
+    document.getElementById('infoAction').textContent = s.willSwap ? 'Will Swap' : 'No Swap';
+    document.getElementById('statusLine').innerHTML =
+      `Pass <b>${s.pass}</b>: comparing <b>${s.array[s.i]}</b> and <b>${s.array[s.j]}</b> — ` +
+      (s.willSwap ? `<b>${s.array[s.i]} &gt; ${s.array[s.j]}</b>, swap needed` : `already in order, no swap`);
+  } else if(s.type === 'swap'){
+    barEls[s.i].classList.add('swap');
+    barEls[s.j].classList.add('swap');
+    document.getElementById('infoCompare').textContent = `a[${s.i}] ⇄ a[${s.j}]`;
+    document.getElementById('infoAction').textContent = 'Swapped';
+    document.getElementById('statusLine').innerHTML =
+      `Pass <b>${s.pass}</b>: swapped positions <b>${s.i}</b> and <b>${s.j}</b> → now <b>${s.array[s.i]}, ${s.array[s.j]}</b>`;
+  } else if(s.type === 'done'){
+    barEls.forEach(col => col.classList.add('sorted'));
+    document.getElementById('infoCompare').textContent = '—';
+    document.getElementById('infoAction').textContent = 'Sorted!';
+    document.getElementById('statusLine').innerHTML = `Array is fully sorted: <b>[${s.array.join(', ')}]</b>`;
+  }
+
+  document.getElementById('infoPass').textContent = s.pass;
+  const sortedCount = s.type === 'done' ? arr.length : (arr.length - s.sortedFrom);
+  document.getElementById('infoSorted').textContent = sortedCount;
+  document.getElementById('progressFill').style.width = `${(n/(steps.length-1))*100}%`;
+}
+
+function appendLogRow(n){
+  const s = steps[n-1];
+  const tr = document.createElement('tr');
+  const resultTag = s.type === 'swap'
+    ? '<span class="tag swap">SWAP</span>'
+    : s.type === 'done'
+      ? '<span class="tag swap" style="background:rgba(72,187,120,0.18);color:var(--sorted);">DONE</span>'
+      : (s.willSwap ? '<span class="tag keep">→ swap next</span>' : '<span class="tag keep">keep</span>');
+  tr.innerHTML = `
+    <td>${n}</td>
+    <td>${s.pass}</td>
+    <td>${s.i ?? '—'}</td>
+    <td>${s.j ?? '—'}</td>
+    <td>${s.type==='done' ? '—' : `a[${s.i}], a[${s.j}]`}</td>
+    <td>${resultTag}</td>
+    <td>[${s.array.join(', ')}]</td>
+  `;
+  logBody.appendChild(tr);
+  logBody.parentElement.scrollTop = logBody.parentElement.scrollHeight;
+}
+
+function goNext(){
+  if(cursor >= steps.length) return;
+  cursor++;
+  applyStateAt(cursor);
+  appendLogRow(cursor);
+  document.getElementById('stepNow').textContent = cursor;
+  if(cursor >= steps.length){
+    document.getElementById('nextBtn').disabled = true;
+    stopAuto();
+  }
+}
+
+function reset(){
+  cursor = 0;
+  logBody.innerHTML = '';
+  applyStateAt(0);
+  document.getElementById('stepNow').textContent = 0;
+  document.getElementById('nextBtn').disabled = false;
+  stopAuto();
+}
+
+function stopAuto(){
+  clearInterval(autoTimer);
+  autoTimer = null;
+  const btn = document.getElementById('autoBtn');
+  btn.textContent = '▶ Auto Play';
+  btn.classList.remove('playing');
+}
+
+function toggleAuto(){
+  const btn = document.getElementById('autoBtn');
+  if(autoTimer){
+    stopAuto();
+  } else {
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('playing');
+    autoTimer = setInterval(() => {
+      if(cursor >= steps.length){ stopAuto(); return; }
+      goNext();
+    }, 750);
+  }
+}
+
+document.getElementById('nextBtn').addEventListener('click', goNext);
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+
+applyStateAt(0);
+</script>
+</body>
+</html>
