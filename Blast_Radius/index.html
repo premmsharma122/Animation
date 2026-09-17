@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blast radius: fire an action and try to take it back</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0C1E29;--ink2:#102A38;--ink3:#1C3F52;--line:#27556C;
+  --fg:#DDE9EF;--dim:#8DA7B5;--faint:#5C7C8C;
+  --go:#4FC2A4;--wait:#EDA83C;--stop:#E4645F;--accent:#79D2E8;
+  --fdisp:"Familjen Grotesk",Georgia,serif;--fbody:"IBM Plex Sans",system-ui,sans-serif;--fmono:"IBM Plex Mono",monospace;
+}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--fg);font-family:var(--fbody);
+  display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+.bar{flex:0 0 auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  padding:14px 26px 12px;border-bottom:1px solid var(--ink3);background:var(--ink2)}
+.bar h1{font-family:var(--fdisp);font-weight:600;font-size:21px;margin:0;letter-spacing:-.01em}
+.bar .ref{font-size:13px;color:var(--dim)}.bar .ref b{color:var(--accent)}
+.wrap{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:0}
+.viz{position:relative;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px}
+svg{width:100%;height:100%;display:block}
+.side{border-left:1px solid var(--ink3);background:var(--ink2);padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.pick{display:flex;flex-direction:column;gap:9px}
+.act{display:flex;flex-direction:column;gap:2px;text-align:left;cursor:pointer;
+  border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--ink);color:var(--fg);
+  font-family:var(--fbody);transition:border-color .2s,background .2s,transform .1s}
+.act:hover{border-color:var(--accent)}
+.act:active{transform:translateY(1px)}
+.act b{font-size:14.5px;font-weight:600}
+.act span{font-size:12px;color:var(--dim)}
+.act.sel{background:rgba(121,210,232,.08)}
+.act.a-read.sel{border-color:var(--go)}
+.act.a-draft.sel{border-color:var(--wait)}
+.act.a-send.sel{border-color:var(--stop)}
+.act .k{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}
+.gauge{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--ink)}
+.gauge .lab{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:8px}
+.gauge .lab b{color:var(--fg)}
+.track{height:14px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden;border:1px solid var(--line)}
+.track i{display:block;height:100%;width:0;background:var(--go);transition:width .8s cubic-bezier(.3,.7,.3,1),background .4s}
+.verdict{font-size:12.5px;line-height:1.4;margin-top:9px;min-height:34px;color:var(--dim)}
+.verdict.good{color:#BDEADD}.verdict.bad{color:#F0B4B1}
+.btns{display:flex;gap:8px}
+.btns button{flex:1;font-family:var(--fbody);font-size:13.5px;font-weight:600;padding:10px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--ink3);color:var(--fg);transition:background .15s,opacity .15s}
+.btns button:hover:not(:disabled){background:var(--line)}
+.btns button:disabled{opacity:.3;cursor:default}
+#undo{border-color:var(--accent)}
+.hint{font-size:12px;color:var(--faint);line-height:1.4;margin-top:auto}
+.hint b{color:var(--dim);font-weight:500}
+text{font-family:var(--fbody);fill:var(--dim)}
+.blab{fill:var(--faint);font-size:12px}
+.actor .body{transition:fill .3s,stroke .3s}
+.actor text{font-size:12.5px;transition:fill .3s}
+.actor.hit .body{fill:var(--stop);stroke:var(--stop)}
+.actor.hit text{fill:#F7D6D4}
+.core .ring{fill:rgba(121,210,232,.08);stroke:var(--accent);stroke-width:1.5}
+.core text{fill:var(--accent);font-family:var(--fmono);font-size:11px}
+.shake{animation:sh .5s}
+@keyframes sh{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(4px)}50%{transform:translateX(-4px)}}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .viz{min-height:300px}.side{border-left:none;border-top:1px solid var(--ink3)}}
+@media (prefers-reduced-motion:reduce){.track i{transition:none}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>How far does it spread?</h1>
+  <span class="ref">FDE Class 3 &middot; <b>Section 8</b> &middot; Blast radius</span>
+</header>
+<div class="wrap">
+  <div class="viz">
+    <svg id="svg" viewBox="0 0 620 560" role="img" aria-label="An action fired from the centre, propagating outward toward external actors">
+      <circle cx="310" cy="300" r="168" fill="none" stroke="var(--faint)" stroke-width="1.5" stroke-dasharray="7 8"></circle>
+      <text class="blab" x="310" y="118" text-anchor="middle">edge of today&rsquo;s exercise</text>
+      <g id="source" opacity=".55">
+        <rect x="150" y="286" width="30" height="30" rx="5" fill="none" stroke="var(--go)" stroke-width="1.5"></rect>
+        <line x1="150" y1="296" x2="180" y2="296" stroke="var(--go)" stroke-width="1.5"></line>
+        <text class="blab" x="165" y="338" text-anchor="middle" fill="var(--go)">source</text>
+      </g>
+      <g id="tray" opacity=".45">
+        <rect x="428" y="284" width="34" height="26" rx="4" fill="none" stroke="var(--wait)" stroke-width="1.5"></rect>
+        <line x1="428" y1="298" x2="462" y2="298" stroke="var(--wait)" stroke-width="1"></line>
+        <text class="blab" x="445" y="334" text-anchor="middle" fill="var(--wait)">review</text>
+      </g>
+      <g id="waves"></g>
+      <circle id="pellet" cx="310" cy="300" r="5" fill="var(--go)" opacity="0"></circle>
+      <g id="draft" opacity="0"><rect x="433" y="272" width="24" height="16" rx="3" fill="var(--wait)"></rect></g>
+      <g class="core">
+        <circle class="ring" cx="310" cy="300" r="42"></circle>
+        <text x="310" y="298" text-anchor="middle">AI</text>
+        <text x="310" y="312" text-anchor="middle">step</text>
+      </g>
+      <g class="actor" id="ac-cust">
+        <circle class="body" cx="310" cy="40" r="15" fill="none" stroke="var(--faint)" stroke-width="1.5"></circle>
+        <text x="310" y="76" text-anchor="middle">a customer</text>
+      </g>
+      <g class="actor" id="ac-coll">
+        <circle class="body" cx="70" cy="500" r="15" fill="none" stroke="var(--faint)" stroke-width="1.5"></circle>
+        <text x="70" y="536" text-anchor="middle">colleagues</text>
+      </g>
+      <g class="actor" id="ac-rec">
+        <circle class="body" cx="550" cy="500" r="15" fill="none" stroke="var(--faint)" stroke-width="1.5"></circle>
+        <text x="550" y="536" text-anchor="middle">live records</text>
+      </g>
+    </svg>
+  </div>
+  <div class="side">
+    <div class="pick">
+      <button class="act a-read" data-act="read">
+        <span class="k">read only</span><b>Read an approved source</b><span>Pull a value in to look at it</span>
+      </button>
+      <button class="act a-draft" data-act="draft">
+        <span class="k">draft only</span><b>Save a draft for review</b><span>Propose language, leave it in the tray</span>
+      </button>
+      <button class="act a-send" data-act="send">
+        <span class="k">consequential &middot; R3 &amp; R5</span><b>Send it / update the record</b><span>Reply to the customer or change the record</span>
+      </button>
+    </div>
+    <div class="gauge">
+      <div class="lab"><span>Can you take it back?</span><b id="pct">&mdash;</b></div>
+      <div class="track"><i id="fill"></i></div>
+      <p class="verdict" id="verdict">Pick an action and fire it.</p>
+    </div>
+    <div class="btns">
+      <button id="undo" disabled>Try to undo</button>
+      <button id="reset">Reset</button>
+    </div>
+    <p class="hint"><b>To run:</b> fire read, then draft, then send. Fire send, then press <b>Try to undo</b> &mdash; the difference is the whole point. R3 and R5 on the request log were this red action, arriving as reasonable requests.</p>
+  </div>
+</div>
+<script>
+var svg=document.getElementById('svg'),waves=document.getElementById('waves'),fill=document.getElementById('fill'),
+pct=document.getElementById('pct'),verdict=document.getElementById('verdict'),undo=document.getElementById('undo'),
+pellet=document.getElementById('pellet'),draft=document.getElementById('draft');
+var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;var CX=310,CY=300;
+var CFG={read:{r:96,color:'var(--go)',pctVal:100,pctText:'100%'},
+draft:{r:168,color:'var(--wait)',pctVal:94,pctText:'~95%'},
+send:{r:270,color:'var(--stop)',pctVal:3,pctText:'~2%'}};
+var actors=[{el:document.getElementById('ac-cust'),x:310,y:40},
+{el:document.getElementById('ac-coll'),x:70,y:500},
+{el:document.getElementById('ac-rec'),x:550,y:500}];
+var state={act:null,done:false,hit:false,raf:null};
+function clearScene(){if(state.raf)cancelAnimationFrame(state.raf);waves.innerHTML='';
+pellet.setAttribute('opacity','0');pellet.setAttribute('cx',CX);pellet.setAttribute('cy',CY);
+draft.setAttribute('opacity','0');actors.forEach(function(a){a.el.classList.remove('hit');});}
+function selBtn(act){document.querySelectorAll('.act').forEach(function(b){b.classList.toggle('sel',b.dataset.act===act);});}
+function ring(color){var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+c.setAttribute('cx',CX);c.setAttribute('cy',CY);c.setAttribute('r',42);c.setAttribute('fill','none');
+c.setAttribute('stroke',color);c.setAttribute('stroke-width',2);waves.appendChild(c);return c;}
+function dist(a){return Math.hypot(a.x-CX,a.y-CY);}
+function fire(act){clearScene();state={act:act,done:false,hit:false,raf:null};selBtn(act);
+undo.disabled=true;undo.textContent='Try to undo';var cfg=CFG[act];
+fill.style.width=cfg.pctVal+'%';fill.style.background=cfg.color;pct.textContent=cfg.pctText;
+verdict.className='verdict';verdict.textContent='firing\u2026';
+var lead=ring(cfg.color);var trail=(act==='send')?[ring(cfg.color),ring(cfg.color)]:[];
+var start=null,dur=reduce?1:(act==='send'?1100:750);
+function step(ts){if(start===null)start=ts;var t=Math.min(1,(ts-start)/dur);var e=1-Math.pow(1-t,3);
+var r=42+(cfg.r-42)*e;lead.setAttribute('r',r);lead.setAttribute('opacity',act==='send'?(1-t)*0.9+0.1:0.85);
+trail.forEach(function(tr,i){var rr=Math.max(42,r-(i+1)*34);tr.setAttribute('r',rr);tr.setAttribute('opacity',Math.max(0,(1-t))*0.5);});
+if(act==='send'){actors.forEach(function(a){if(r>=dist(a))a.el.classList.add('hit');});}
+if(t<1){state.raf=requestAnimationFrame(step);}else{settle(act);}}
+state.raf=requestAnimationFrame(step);
+if(act==='read'){pellet.setAttribute('opacity','1');animateAttr(pellet,'cx',165,CX,700,true);}
+if(act==='draft'){setTimeout(function(){draft.setAttribute('opacity','1');},reduce?0:400);}}
+function animateAttr(el,attr,from,to,dur,delayHalf){var start=null;
+function s(ts){if(start===null)start=ts;var t=Math.min(1,(ts-start)/dur);
+var v=delayHalf?(t<0.5?from+(to-from)*(t/0.5):to):from+(to-from)*t;el.setAttribute(attr,v);
+if(t<1)requestAnimationFrame(s);}requestAnimationFrame(s);}
+function settle(act){state.done=true;undo.disabled=false;
+if(act==='send'){state.hit=true;verdict.className='verdict bad';
+verdict.textContent='It left the boundary. A customer has read it and colleagues are acting on the changed record.';}
+else if(act==='read'){verdict.className='verdict good';
+verdict.textContent='Contained. Nothing left your workspace. If you read the wrong field, you read it again.';}
+else{verdict.className='verdict good';
+verdict.textContent='Still inside the boundary. The draft waits in the tray for the reviewer it was written for.';}}
+undo.addEventListener('click',function(){if(!state.done)return;
+if(state.hit){svg.classList.remove('shake');void svg.offsetWidth;svg.classList.add('shake');
+undo.textContent='Nothing to recall';undo.disabled=true;verdict.className='verdict bad';
+verdict.textContent='Undo does nothing. The message is read and the record is already in use. This is why the red action needs approval, testing and a rollback plan before it exists.';return;}
+if(state.raf)cancelAnimationFrame(state.raf);var rings=waves.querySelectorAll('circle');
+var start=null,dur=reduce?1:450;var r0=rings.length?parseFloat(rings[0].getAttribute('r')):42;
+function s(ts){if(start===null)start=ts;var t=Math.min(1,(ts-start)/dur);
+rings.forEach(function(rg){rg.setAttribute('r',42+(r0-42)*(1-t));rg.setAttribute('opacity',(1-t)*0.85);});
+draft.setAttribute('opacity',(1-t)*(state.act==='draft'?1:0));
+pellet.setAttribute('opacity',(1-t)*(state.act==='read'?1:0));
+if(t<1)requestAnimationFrame(s);else{waves.innerHTML='';}}requestAnimationFrame(s);
+undo.disabled=true;fill.style.width='100%';fill.style.background='var(--go)';pct.textContent='100%';
+verdict.className='verdict good';verdict.textContent='Pulled back cleanly. The action never reached anyone, so there was nothing to recover.';});
+document.querySelectorAll('.act').forEach(function(b){b.addEventListener('click',function(){fire(b.dataset.act);});});
+document.getElementById('reset').addEventListener('click',function(){clearScene();selBtn(null);
+fill.style.width='0';fill.style.background='var(--go)';pct.textContent='\u2014';
+verdict.className='verdict';verdict.textContent='Pick an action and fire it.';
+undo.disabled=true;undo.textContent='Try to undo';state={act:null,done:false,hit:false,raf:null};});
+document.addEventListener('keydown',function(e){if(e.key==='1')fire('read');else if(e.key==='2')fire('draft');
+else if(e.key==='3')fire('send');else if(e.key==='u'||e.key==='U')undo.click();
+else if(e.key==='r'||e.key==='R')document.getElementById('reset').click();});
+</script>
+</body>
+</html>
