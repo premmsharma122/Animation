@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A fixed week, six requests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0C1E29;--ink2:#102A38;--ink3:#1C3F52;--line:#27556C;
+--fg:#DDE9EF;--dim:#8DA7B5;--faint:#5C7C8C;--go:#4FC2A4;--wait:#EDA83C;--stop:#E4645F;--accent:#79D2E8;--human:#B398EE;
+--fdisp:"Familjen Grotesk",Georgia,serif;--fbody:"IBM Plex Sans",system-ui,sans-serif;--fmono:"IBM Plex Mono",monospace;}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--ink);color:var(--fg);font-family:var(--fbody);display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+.bar{flex:0 0 auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:14px 26px 12px;border-bottom:1px solid var(--ink3);background:var(--ink2)}
+.bar h1{font-family:var(--fdisp);font-weight:600;font-size:21px;margin:0;letter-spacing:-.01em}
+.bar .ref{font-size:13px;color:var(--dim)}.bar .ref b{color:var(--accent)}
+.viz{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px 20px}
+svg{width:100%;height:100%;display:block}
+.rail{flex:0 0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px 14px;border-top:1px solid var(--ink3);background:var(--ink2)}
+.modes{display:flex;gap:8px}
+.mbtn{font-family:var(--fbody);cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:9px 15px;background:var(--ink);color:var(--fg);transition:border-color .2s,background .2s}
+.mbtn:hover{border-color:var(--accent)}
+.mbtn b{display:block;font-size:13.5px;font-weight:600}
+.mbtn span{font-size:11.5px;color:var(--dim)}
+.mbtn.sel{border-color:var(--accent);background:rgba(121,210,232,.08)}
+.cap{flex:1 1 200px;min-width:0;font-size:14.5px;line-height:1.35;color:var(--dim)}
+.cap b{color:#fff;font-weight:600}
+.ctrl{display:flex;gap:8px;margin-left:auto}
+.ctrl button{font-family:var(--fbody);font-size:14px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--ink3);color:var(--fg);transition:background .15s,opacity .15s}
+.ctrl button:hover:not(:disabled){background:var(--line)}
+.ctrl button:disabled{opacity:.35;cursor:default}
+.ctrl button.key{background:var(--accent);border-color:var(--accent);color:#06222C}
+.ctrl button.key:hover{background:#9BE0F1}
+text{font-family:var(--fbody);fill:var(--dim)}
+.jarwall{fill:none;stroke:var(--line);stroke-width:2.5}
+.rim{stroke:var(--faint);stroke-width:1.5;stroke-dasharray:6 6}
+.blk rect{transition:none}
+.blk text{font-family:var(--fmono);font-size:12px;fill:#0C1E29;font-weight:600}
+.zonelab{font-size:12px;fill:var(--faint)}
+@media (max-width:820px){.bar{padding:10px 16px}.bar h1{font-size:17px}.cap{order:3;flex-basis:100%}.ctrl{margin-left:0}}
+</style>
+</head>
+<body>
+<header class="bar"><h1>A fixed week, six requests</h1>
+<span class="ref">FDE Class 3 &middot; <b>Section 2</b> &middot; Scope creep and the request log</span></header>
+
+<div class="viz">
+<svg id="svg" viewBox="0 0 960 460" role="img" aria-label="A fixed-capacity jar filling with requests">
+  <!-- capacity jar -->
+  <path class="jarwall" d="M120 70 L120 400 Q120 410 130 410 L360 410 Q370 410 370 400 L370 70"></path>
+  <line class="rim" x1="112" y1="70" x2="378" y2="70"></line>
+  <text class="zonelab" id="capLab" x="245" y="52" text-anchor="middle">capacity: the ten days you have</text>
+  <text class="zonelab" x="245" y="432" text-anchor="middle" font-size="11.5">the agreed question sits at the bottom</text>
+
+  <!-- overflow marker -->
+  <text id="spillLab" x="245" y="34" text-anchor="middle" fill="var(--stop)" font-size="12.5" font-weight="600" opacity="0">over capacity</text>
+
+  <!-- side zones (triaged mode) -->
+  <g id="zones" opacity="0">
+    <rect x="470" y="90" width="200" height="90" rx="10" fill="none" stroke="var(--faint)" stroke-dasharray="6 6"></rect>
+    <text class="zonelab" x="570" y="112" text-anchor="middle" fill="var(--dim)">parking lot &middot; deferred, visible</text>
+    <rect x="470" y="210" width="200" height="90" rx="10" fill="none" stroke="rgba(228,100,95,.5)" stroke-dasharray="6 6"></rect>
+    <text class="zonelab" x="570" y="232" text-anchor="middle" fill="var(--stop)">not permitted &middot; bounced</text>
+    <rect x="700" y="90" width="210" height="210" rx="10" fill="none" stroke="rgba(237,168,60,.5)" stroke-dasharray="6 6"></rect>
+    <text class="zonelab" x="805" y="112" text-anchor="middle" fill="var(--wait)">constraint &middot; sets the lid height</text>
+  </g>
+
+  <!-- blocks injected here -->
+  <g id="blocks"></g>
+</svg>
+</div>
+
+<div class="rail">
+  <div class="modes">
+    <button class="mbtn sel" data-mode="raw"><b>No triage</b><span>say yes to each</span></button>
+    <button class="mbtn" data-mode="sorted"><b>Mark each one</b><span>sort before it lands</span></button>
+  </div>
+  <p class="cap" id="cap">Six requests, all reasonable, all from senior people. Press <b>Play</b>.</p>
+  <div class="ctrl"><button id="play" class="key">Play</button><button id="reset">Reset</button></div>
+</div>
+
+<script>
+var NS='http://www.w3.org/2000/svg';
+var blocks=document.getElementById('blocks'),cap=document.getElementById('cap'),play=document.getElementById('play');
+var zones=document.getElementById('zones'),spillLab=document.getElementById('spillLab'),capLab=document.getElementById('capLab');
+var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+var mode='raw',busy=false;
+
+// jar geometry
+var JX=125,JW=240,JBOT=406,JTOP=74;   // inner
+var REQ=[
+ {id:'R1',h:46,from:'Ops Innovation',kind:'constraint',c:'var(--wait)'},
+ {id:'R2',h:86,from:'Ops Innovation',kind:'parked',c:'var(--dim)'},
+ {id:'R3',h:58,from:'VP Cust Ops',kind:'stop',c:'var(--stop)'},
+ {id:'R4',h:40,from:'Support Ops Mgr',kind:'in',c:'var(--go)'},
+ {id:'R5',h:58,from:'Engineering Lead',kind:'stop',c:'var(--stop)'},
+ {id:'R6',h:40,from:'Support Agent',kind:'in',c:'var(--go)'}
+];
+var FLOOR=64; // smallest the agreed question can be squeezed to
+
+function rectBlock(id,x,y,w,h,color,label){
+  var g=document.createElementNS(NS,'g');g.className.baseVal='blk';g.setAttribute('data-id',id);
+  var r=document.createElementNS(NS,'rect');
+  r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);
+  r.setAttribute('rx',6);r.setAttribute('fill',color);r.setAttribute('opacity','.92');
+  var t=document.createElementNS(NS,'text');t.setAttribute('x',x+w/2);t.setAttribute('y',y+h/2+4);
+  t.setAttribute('text-anchor','middle');t.textContent=label||id;
+  g.appendChild(r);g.appendChild(t);blocks.appendChild(g);return {g:g,r:r,t:t};
+}
+function drop(o,toY,dur){return new Promise(function(res){
+  var fromY=+o.r.getAttribute('y'),st=null;dur=reduce?1:dur;
+  function s(ts){if(st===null)st=ts;var t=Math.min(1,(ts-st)/dur);var e=1-Math.pow(1-t,2.2);
+    var y=fromY+(toY-fromY)*e;o.r.setAttribute('y',y);o.t.setAttribute('y',y+(+o.r.getAttribute('height'))/2+4);
+    if(t<1)requestAnimationFrame(s);else res();}
+  requestAnimationFrame(s);});}
+function moveX(o,toX,dur){return new Promise(function(res){
+  var fx=+o.r.getAttribute('x'),w=+o.r.getAttribute('width'),st=null;dur=reduce?1:dur;
+  function s(ts){if(st===null)st=ts;var t=Math.min(1,(ts-st)/dur);var e=1-Math.pow(1-t,3);
+    var x=fx+(toX-fx)*e;o.r.setAttribute('x',x);o.t.setAttribute('x',x+w/2);
+    if(t<1)requestAnimationFrame(s);else res();}
+  requestAnimationFrame(s);});}
+function wait(ms){return new Promise(function(r){setTimeout(r,reduce?1:ms);});}
+function say(h){cap.innerHTML=h;}
+
+var agreed,sortedPileTop;
+function setup(){
+  blocks.innerHTML='';spillLab.setAttribute('opacity','0');capLab.setAttribute('opacity','1');
+  zones.setAttribute('opacity', mode==='sorted'?'1':'0');
+  capLab.textContent = mode==='sorted' ? 'capacity: set by R1 (ten days)' : 'capacity: the ten days you have';
+  // agreed question block: fills most of the jar. In sorted mode it leaves room for the in-scope work.
+  var ah = mode==='sorted' ? 200 : 300;
+  sortedPileTop = JBOT-ah;
+  agreed=rectBlock('AQ',JX,JBOT-ah,JW,ah,'rgba(79,194,164,.22)','');
+  agreed.r.setAttribute('stroke','var(--go)');agreed.r.setAttribute('stroke-width','1.5');agreed.r.setAttribute('fill','rgba(79,194,164,.16)');
+  agreed.t.textContent='the question we agreed to answer';
+  agreed.t.setAttribute('fill','var(--go)');agreed.t.style.fontFamily='var(--fbody)';agreed.t.style.fontSize='13px';
+}
+
+function shrinkAgreed(toH,dur){return new Promise(function(res){
+  var h0=+agreed.r.getAttribute('height'),st=null;dur=reduce?1:dur;
+  function s(ts){if(st===null)st=ts;var t=Math.min(1,(ts-st)/dur);var e=1-Math.pow(1-t,3);
+    var h=h0+(toH-h0)*e;agreed.r.setAttribute('height',h);agreed.r.setAttribute('y',JBOT-h);
+    agreed.t.setAttribute('y',JBOT-h/2+4);
+    if(t<1)requestAnimationFrame(s);else res();}
+  requestAnimationFrame(s);});}
+
+async function playRaw(){
+  say('Nobody sorts them. Each one just&hellip; goes in, and each one takes time from the work you promised.');
+  var totalReq=REQ.reduce(function(a,q){return a+q.h;},0);
+  // agreed gets squeezed toward the floor as requests pile on top of it
+  var pileTop=JBOT-FLOOR;               // requests stack upward from the top of the squeezed agreed block
+  await shrinkAgreed(FLOOR,600);
+  for(var i=0;i<REQ.length;i++){
+    var q=REQ[i];
+    var o=rectBlock(q.id, JX, JTOP-70, JW, q.h, q.c, q.id+' \u00b7 '+q.from);
+    o.t.style.fontSize='11px';
+    var landY=pileTop-q.h;
+    var spilling=landY<JTOP;
+    await drop(o, landY, 460);
+    if(spilling){o.r.setAttribute('opacity','.5');o.r.setAttribute('stroke','var(--stop)');
+      o.r.setAttribute('stroke-width','1.5');o.r.setAttribute('stroke-dasharray','5 4');
+      spillLab.setAttribute('opacity','1');capLab.setAttribute('opacity','0');}
+    pileTop=landY;
+    await wait(150);
+  }
+  say('<b>The agreed question is crushed to the bottom and the pile is over the rim.</b> Two of those blocks were never a scope question at all &mdash; they went in because saying yes was easier than writing a no.');
+}
+
+async function playSorted(){
+  say('Same six, but each is marked before it can land.');
+  for(var i=0;i<REQ.length;i++){
+    var q=REQ[i];
+    var o=rectBlock(q.id, JX+90, JTOP-60, JW, q.h, q.c, q.id+' \u00b7 '+q.from);
+    o.t.style.fontSize='11px';
+    await drop(o, 180, 300);
+    if(q.kind==='constraint'){
+      say('<b>R1 is a constraint.</b> A deadline does not go in the jar &mdash; it decides how tall the jar is.');
+      await moveX(o, 720, 500);await drop(o, 130, 300);
+    } else if(q.kind==='parked'){
+      say('<b>R2 is parked.</b> Reasonable, from the funder, and it would halve the week. Deferred in writing, still visible.');
+      await moveX(o, 500, 500);await drop(o, 118, 300);
+    } else if(q.kind==='stop'){
+      say('<b>'+q.id+' is not permitted.</b> A consequential action. It hits the lid and bounces to its own tray.');
+      await moveX(o, 500, 450);await drop(o, q.id==='R3'?238:260, 260);
+      o.r.setAttribute('opacity','.6');
+    } else {
+      say('<b>'+q.id+' is in scope.</b> It serves the same question, so it fits inside alongside the agreed work.');
+      var landY=sortedPileTop-q.h-2;
+      await moveX(o, JX, 400);await drop(o, landY, 300);
+      sortedPileTop=landY;
+    }
+    await wait(150);
+  }
+  say('<b>Same six requests, same ten days.</b> The agreed question kept the jar because three of them never reached it &mdash; and all three are still visible.');
+}
+
+async function run(){
+  if(busy)return;busy=true;play.disabled=true;setup();
+  if(mode==='raw')await playRaw();else await playSorted();
+  busy=false;play.disabled=false;
+}
+document.querySelectorAll('.mbtn').forEach(function(b){b.addEventListener('click',function(){
+  if(busy)return;mode=b.dataset.mode;
+  document.querySelectorAll('.mbtn').forEach(function(x){x.classList.remove('sel');});
+  b.classList.add('sel');setup();
+  say(mode==='raw'?'Six requests, all reasonable. Press <b>Play</b> and watch the jar.':'Now each request is marked before it lands. Press <b>Play</b>.');
+});});
+play.addEventListener('click',run);
+document.getElementById('reset').addEventListener('click',function(){if(!busy){setup();say('Press <b>Play</b>.');}});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();run();}
+  else if(e.key==='1'){document.querySelector('[data-mode=raw]').click();}
+  else if(e.key==='2'){document.querySelector('[data-mode=sorted]').click();}
+  else if(e.key==='r'||e.key==='R'){if(!busy){setup();}}});
+setup();
+</script>
+</body>
+</html>
